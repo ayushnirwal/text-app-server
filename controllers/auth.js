@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 const { createJWT } = require("../utils/auth");
 const emailRegexp =
@@ -28,6 +29,7 @@ exports.signup = (req, res, next) => {
     errors.push({ password: "mismatch" });
   }
   if (errors.length > 0) {
+    lo;
     return res.status(422).json({ errors: errors });
   }
   User.findOne({ email: email })
@@ -38,10 +40,13 @@ exports.signup = (req, res, next) => {
           .json({ errors: [{ user: "email already exists" }] });
       } else {
         const user = new User({
+          id: uuidv4(),
           name: name,
           email: email,
           password: password,
+          friends: [],
         });
+
         bcrypt.genSalt(10, function (err, salt) {
           bcrypt.hash(password, salt, function (err, hash) {
             if (err) throw err;
@@ -53,6 +58,7 @@ exports.signup = (req, res, next) => {
                   success: true,
                   result: response,
                 });
+                console.log("new user signed up");
               })
               .catch((err) => {
                 res.status(500).json({
@@ -111,6 +117,7 @@ exports.signin = (req, res) => {
                   res.status(500).json({ erros: err });
                 }
                 if (decoded) {
+                  console.log("a user signed in");
                   return res.status(200).json({
                     success: true,
                     token: access_token,
