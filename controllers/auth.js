@@ -29,7 +29,6 @@ exports.signup = (req, res, next) => {
     errors.push({ password: "mismatch" });
   }
   if (errors.length > 0) {
-    lo;
     return res.status(422).json({ errors: errors });
   }
   User.findOne({ email: email })
@@ -44,7 +43,9 @@ exports.signup = (req, res, next) => {
           name: name,
           email: email,
           password: password,
+          profilePicLink: "",
           friends: [],
+          requests: [],
         });
 
         bcrypt.genSalt(10, function (err, salt) {
@@ -75,6 +76,7 @@ exports.signup = (req, res, next) => {
       });
     });
 };
+
 exports.signin = (req, res) => {
   let { email, password } = req.body;
 
@@ -89,6 +91,7 @@ exports.signin = (req, res) => {
     errors.push({ passowrd: "required" });
   }
   if (errors.length > 0) {
+    console.log(errors);
     return res.status(422).json({ errors: errors });
   }
   User.findOne({ email: email })
@@ -107,7 +110,11 @@ exports.signin = (req, res) => {
                 .json({ errors: [{ password: "incorrect" }] });
             }
 
-            let access_token = createJWT(user.email, user._id, 3600);
+            let access_token = createJWT(
+              user.email,
+              user.id,
+              parseInt(process.env.TOKEN_DURATION, 10)
+            );
 
             jwt.verify(
               access_token,
@@ -121,7 +128,7 @@ exports.signin = (req, res) => {
                   return res.status(200).json({
                     success: true,
                     token: access_token,
-                    message: user,
+                    user: user,
                   });
                 }
               }

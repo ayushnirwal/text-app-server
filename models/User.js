@@ -22,6 +22,14 @@ let userSchema = new Schema(
       type: Array,
       required: false,
     },
+    requests: {
+      type: Array,
+      required: false,
+    },
+    profilePicLink: {
+      type: String,
+      required: false,
+    },
   },
   {
     timestamps: true,
