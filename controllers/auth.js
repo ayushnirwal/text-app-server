@@ -5,6 +5,35 @@ const bcrypt = require("bcrypt");
 const { createJWT } = require("../utils/auth");
 const emailRegexp =
   /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+exports.userDetails = async (req, res) => {
+  const access_token = req.headers.authorization.slice("Bearer ".length);
+  console.log('fetching user data');
+
+  let myUserObj = {};
+  await jwt.verify(
+    access_token,
+    process.env.TOKEN_SECRET,
+    {},
+    async (err, decoded) => {
+      if (err) {
+        res.status(400).json({ errors: err });
+        return;
+      }
+      if (decoded) {
+        myUserObj = await User.findOne({ id: decoded.userId });
+        if (!myUserObj) {
+          res
+            .status(400)
+            .json({ errors: [{ email: "user account doesn't exist" }] });
+          return;
+        }
+      }
+    }
+  );
+  res.status(200).json(myUserObj);
+}
+
 exports.signup = (req, res, next) => {
   let { name, email, password, password_confirmation } = req.body;
   let errors = [];
@@ -72,7 +101,7 @@ exports.signup = (req, res, next) => {
     })
     .catch((err) => {
       res.status(500).json({
-        errors: [{ error: "Something went wrong" }],
+        errors: [{ error: err.message }],
       });
     });
 };
