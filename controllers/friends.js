@@ -4,6 +4,35 @@ const User = require("../models/User");
 const emailRegexp =
   /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
+
+exports.getPendingRequests = async (req, res) => {
+  const access_token = req.headers.authorization.slice("Bearer ".length);
+  console.log('fetching pending requests');
+
+  let myUserObj = {};
+  await jwt.verify(
+    access_token,
+    process.env.TOKEN_SECRET,
+    {},
+    async (err, decoded) => {
+      if (err) {
+        res.status(400).json({ errors: err });
+        return;
+      }
+      if (decoded) {
+        myUserObj = await User.findOne({ id: decoded.userId });
+        if (!myUserObj) {
+          res
+            .status(400)
+            .json({ errors: [{ email: "user account doesn't exist" }] });
+          return;
+        }
+      }
+    }
+  );
+  res.status(200).json(myUserObj.requests || []);
+};
+
 exports.sendRequest = async (req, res, next) => {
   //someone said verifying auth token this way is bad for performance.
   //They said use redis where you make an entry mapping a randomid with user data with some expire time,
@@ -21,6 +50,7 @@ exports.sendRequest = async (req, res, next) => {
   await jwt.verify(
     access_token,
     process.env.TOKEN_SECRET,
+    {},
     async (err, decoded) => {
       if (err) {
         res.status(400).json({ errors: err });
@@ -80,18 +110,19 @@ exports.sendRequest = async (req, res, next) => {
   }
 
   //all checks done i guess, now adding new request to their request array
-
+  newRequest = {
+    name: myUserObj.name,
+    email: myUserObj.email,
+    id: myUserObj.id,
+  };
   const newRequests = [
     ...theirRequests,
-    {
-      name: myUserObj.name,
-      email: myUserObj.email,
-      id: myUserObj.id,
-    },
+    newRequest,
   ];
   theirUserObj.requests = newRequests;
   theirUserObj.save();
-  res.status(200).json({ success: "request sent" });
+
+  res.status(200).json(newRequest);
 };
 
 exports.acceptRequest = async (req, res) => {
@@ -107,6 +138,7 @@ exports.acceptRequest = async (req, res) => {
   await jwt.verify(
     access_token,
     process.env.TOKEN_SECRET,
+    {},
     async (err, decoded) => {
       if (err) {
         res.status(400).json({ errors: err });
@@ -176,9 +208,14 @@ exports.acceptRequest = async (req, res) => {
 
   //add me to their friends list
 
+  newFriend = {
+    id: myUserObj.id,
+    name: myUserObj.name,
+    email: myUserObj.email
+  }
   const theirNewFriends = [
     ...theirUserObj.friends,
-    { id: myUserObj.id, name: myUserObj.name, email: myUserObj.email },
+    newFriend,
   ];
   theirUserObj.friends = theirNewFriends;
 
@@ -188,7 +225,7 @@ exports.acceptRequest = async (req, res) => {
   theirUserObj.save();
 
   //done
-  res.status(200).json({ success: "request accepted" });
+  res.status(200).json(newFriend);
 };
 
 exports.delRequest = async (req, res) => {
@@ -204,6 +241,7 @@ exports.delRequest = async (req, res) => {
   await jwt.verify(
     access_token,
     process.env.TOKEN_SECRET,
+    {},
     async (err, decoded) => {
       if (err) {
         res.status(400).json({ errors: err });
@@ -273,6 +311,7 @@ exports.rejectRequest = async (req, res) => {
   await jwt.verify(
     access_token,
     process.env.TOKEN_SECRET,
+    {},
     async (err, decoded) => {
       if (err) {
         res.status(400).json({ errors: err });
@@ -342,6 +381,7 @@ exports.removeFriend = async (req, res) => {
   await jwt.verify(
     access_token,
     process.env.TOKEN_SECRET,
+    {},
     async (err, decoded) => {
       if (err) {
         res.status(400).json({ errors: err });
