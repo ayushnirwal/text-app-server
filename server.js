@@ -6,6 +6,7 @@ require("dotenv").config();
 //import routes
 const authRoutes = require("./routes/auth");
 const requestRoutes = require("./routes/friends");
+const profileRoutes = require("./routes/profile");
 const { db } = require("./models/User");
 //app
 const app = express();
@@ -23,6 +24,7 @@ app.use(cors());
 //routes middleware
 app.use("/api", authRoutes);
 app.use("/api", requestRoutes);
+app.use("/api", profileRoutes);
 const port = process.env.PORT || 8000;
 app.listen(port, () => {
   console.log(`Server is running on ${port}`);
