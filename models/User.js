@@ -24,7 +24,7 @@ let userSchema = new Schema(
       required: false,
     },
     requests: {
-      type: Array,
+      type: Object,
       required: false,
     },
     avatarInd: {

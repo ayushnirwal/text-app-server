@@ -34,7 +34,7 @@ exports.signup = (req, res, next) => {
           password: password,
           profilePicLink: "",
           friends: [],
-          requests: [],
+          requests: { sent_requests: [], receieved_requests: [] },
         });
 
         bcrypt.genSalt(10, function (err, salt) {
