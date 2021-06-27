@@ -1,12 +1,10 @@
 const express = require("express");
-const {
-  sendRequest,
-  acceptRequest,
-  rejectRequest,
-  delRequest,
-  removeFriend,
-  getPendingRequests,
-} = require("../controllers/friends");
+const { sendRequest } = require("../controllers/friends/sendRequest");
+const { acceptRequest } = require("../controllers/friends/acceptRequest");
+const { rejectRequest } = require("../controllers/friends/rejectRequest");
+const { delRequest } = require("../controllers/friends/delRequest");
+const { removeFriend } = require("../controllers/friends/removeFriend");
+
 const { authenticate } = require("../middlewares/authenticate");
 const router = express.Router();
 
@@ -15,6 +13,5 @@ router.post("/acceptRequest", authenticate, acceptRequest);
 router.post("/rejectRequest", authenticate, rejectRequest);
 router.post("/delRequest", authenticate, delRequest);
 router.post("/removeFriend", authenticate, removeFriend);
-router.get("/requests", getPendingRequests);
 
 module.exports = router;
