@@ -73,8 +73,8 @@ exports.removeFriend = async (req, res) => {
 
   //save
 
-  myUserObj.save();
-  theirUserObj.save();
+  await myUserObj.save();
+  await theirUserObj.save();
 
   //done
   res.status(200).json({ success: true });

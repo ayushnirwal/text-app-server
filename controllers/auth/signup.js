@@ -31,7 +31,7 @@ exports.signup = (req, res, next) => {
           id: uuidv4(),
           email: email,
           password: password,
-          profilePicLink: "",
+          avatarInd: null,
           friends: [],
           requests: { sent: [], received: [] },
         });

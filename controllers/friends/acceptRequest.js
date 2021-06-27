@@ -82,8 +82,8 @@ exports.acceptRequest = async (req, res) => {
   theirUserObj.friends = theirNewFriends;
 
   //save
-  myUserObj.save();
-  theirUserObj.save();
+  await myUserObj.save();
+  await theirUserObj.save();
 
   //done
   res.status(200).json({ success: true });
