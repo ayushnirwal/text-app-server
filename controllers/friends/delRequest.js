@@ -1,63 +1,13 @@
 const User = require("../../models/User");
+const { isSentRequestExists } = require("./helpers/isSentRequestExists");
 
 exports.delRequest = async (req, res) => {
   const theirEmail = req.body.email;
   const myEmail = res.locals.user.email;
 
-  let myUserObj = null;
-  let theirUserObj = null;
-
-  theirUserObj = await User.findOne({ email: theirEmail });
-  myUserObj = await User.findOne({ email: myEmail });
-
-  //check userObjs
-
-  if (
-    theirUserObj === null ||
-    theirUserObj === undefined ||
-    myUserObj === null ||
-    myUserObj === undefined
-  ) {
-    res.status(400).json({ errors: [{ email: "user account doesn't exist" }] });
-    return;
+  if (!theirEmail) {
+    res.status(400).json({ message: "email invalid" });
   }
-
-  //check if my request exists in theirUserObj
-
-  let requestExists = false;
-  const theirRequests = theirUserObj.requests;
-  theirRequests.forEach((request) => {
-    if (request.id === myUserObj.id) {
-      requestExists = true;
-    }
-  });
-
-  if (!requestExists) {
-    res.status(400).json({ errors: [{ email: "request doesn't exist" }] });
-    return;
-  }
-
-  // checks done
-
-  // filter their req
-
-  const newRequests = theirRequests.filter(
-    (request) => request.id !== myUserObj.id
-  );
-
-  theirUserObj.requests = newRequests;
-
-  //save
-
-  theirUserObj.save();
-
-  //done
-  res.status(200).json({ success: "request deleted" });
-};
-
-exports.rejectRequest = async (req, res) => {
-  const theirEmail = req.body.email;
-  const myEmail = res.locals.user.email;
 
   let myUserObj = null;
   let theirUserObj = null;
@@ -73,39 +23,45 @@ exports.rejectRequest = async (req, res) => {
     myUserObj === null ||
     myUserObj === undefined
   ) {
-    res.status(400).json({ errors: [{ email: "user account doesn't exist" }] });
+    res.status(400).json({ message: "user account doesn't exist" });
     return;
   }
 
-  //check if their request exists in myUserObj
-
-  let requestExists = false;
-  const myRequests = myUserObj.requests;
-  myRequests.forEach((request) => {
-    if (request.id === theirUserObj.id) {
-      requestExists = true;
-    }
-  });
-
-  if (!requestExists) {
-    res.status(400).json({ errors: [{ email: "request doesn't exist" }] });
+  //check if request was sent
+  if (!isSentRequestExists(myUserObj, theirUserObj)) {
+    res
+      .status(400)
+      .json({ message: "no such request was sent by you or received by them" });
     return;
   }
 
   // checks done
 
-  // filter their req
+  console.log(myUserObj.requests, theirUserObj.requests);
 
-  const newRequests = myRequests.filter(
-    (request) => request.id !== theirUserObj.id
+  // filter my req from their received
+  const newReceivedRequests = theirUserObj.requests.received.filter(
+    (requestID) => requestID !== myUserObj.id
   );
 
-  myUserObj.requests = newRequests;
+  theirUserObj.requests.received = newReceivedRequests;
+
+  // filter my req from my sent
+  const newSentRequests = myUserObj.requests.sent.filter(
+    (requestID) => requestID !== theirUserObj.id
+  );
+  myUserObj.requests.sent = newSentRequests;
+
+  console.log(myUserObj.requests, theirUserObj.requests);
+
+  //declare what stuff is modified
+  theirUserObj.markModified("requests.received");
+  myUserObj.markModified("requests.sent");
 
   //save
-
-  myUserObj.save();
+  await myUserObj.save();
+  await theirUserObj.save();
 
   //done
-  res.status(200).json({ success: "request rejected" });
+  res.status(200).json({ success: true });
 };

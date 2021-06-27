@@ -1,9 +1,12 @@
-const jwt = require("jsonwebtoken");
 const User = require("../../models/User");
 
 exports.removeFriend = async (req, res) => {
   const theirEmail = req.body.email;
   const myEmail = res.locals.user.email;
+
+  if (!theirEmail) {
+    res.status(400).json({ message: "email invalid" });
+  }
 
   let myUserObj = null;
   let theirUserObj = null;
@@ -19,21 +22,21 @@ exports.removeFriend = async (req, res) => {
     myUserObj === null ||
     myUserObj === undefined
   ) {
-    res.status(400).json({ errors: [{ email: "user account doesn't exist" }] });
+    res.status(400).json({ message: "user account doesn't exist" });
     return;
   }
   //check if i am their friend
 
   let alreadyFriend = false;
   const theirFriends = theirUserObj.friends;
-  theirFriends.forEach((friend) => {
-    if (friend.id === myUserObj.id) {
+  theirFriends.forEach((friendID) => {
+    if (friendID === myUserObj.id) {
       alreadyFriend = true;
     }
   });
 
   if (!alreadyFriend) {
-    res.status(400).json({ errors: [{ email: "not their friend" }] });
+    res.status(400).json({ message: "not their friend" });
     return;
   }
 
@@ -41,14 +44,14 @@ exports.removeFriend = async (req, res) => {
 
   alreadyFriend = false;
   const myFriends = myUserObj.friends;
-  myFriends.forEach((friend) => {
-    if (friend.id === theirUserObj.id) {
+  myFriends.forEach((friendID) => {
+    if (friendID === theirUserObj.id) {
       alreadyFriend = true;
     }
   });
 
   if (!alreadyFriend) {
-    res.status(400).json({ errors: [{ email: "not my friend" }] });
+    res.status(400).json({ message: "not my friend" });
     return;
   }
 
@@ -57,13 +60,13 @@ exports.removeFriend = async (req, res) => {
   // remove from both friend list
 
   const myNewFriends = myFriends.filter(
-    (friend) => friend.id !== theirUserObj.id
+    (friendID) => friendID !== theirUserObj.id
   );
 
   myUserObj.friends = myNewFriends;
 
   const theirNewFriends = theirFriends.filter(
-    (friend) => friend.id !== myUserObj.id
+    (friendID) => friendID !== myUserObj.id
   );
 
   theirUserObj.friends = theirNewFriends;
@@ -74,5 +77,5 @@ exports.removeFriend = async (req, res) => {
   theirUserObj.save();
 
   //done
-  res.status(200).json({ success: "friend removed" });
+  res.status(200).json({ success: true });
 };

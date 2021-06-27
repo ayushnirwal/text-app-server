@@ -1,5 +1,5 @@
 const User = require("../../models/User");
-
+const { isSentRequestExists } = require("./helpers/isSentRequestExists");
 exports.sendRequest = async (req, res, next) => {
   //someone said verifying auth token this way is bad for performance.
   //They said use redis where you make an entry mapping a randomid with user data with some expire time,
@@ -7,6 +7,10 @@ exports.sendRequest = async (req, res, next) => {
 
   const theirEmail = req.body.email;
   const myEmail = res.locals.user.email;
+
+  if (!theirEmail) {
+    res.status(400).json({ message: "email invalid" });
+  }
 
   let myUserObj = null;
   let theirUserObj = null;
@@ -22,48 +26,48 @@ exports.sendRequest = async (req, res, next) => {
     myUserObj === null ||
     myUserObj === undefined
   ) {
-    res.status(400).json({ errors: [{ email: "user account doesn't exist" }] });
+    res.status(400).json({ message: "user account doesn't exist" });
     return;
   }
 
   //check if i am already their friend
   let alreadyFriend = false;
   const theirFriends = theirUserObj.friends;
-  theirFriends.forEach((friend) => {
-    if (friend.id === myUserObj.id) {
+  theirFriends.forEach((friendID) => {
+    if (friendID === myUserObj.id) {
       alreadyFriend = true;
     }
   });
 
   if (alreadyFriend) {
-    res.status(400).json({ errors: [{ email: "already their friend" }] });
+    res.status(400).json({ message: "already their friend" });
     return;
   }
 
-  //check if my request already exists
+  //check if such request is sent
 
-  let requestExists = false;
-  const theirRequests = theirUserObj.requests;
-  theirRequests.forEach((request) => {
-    if (request.id === myUserObj.id) {
-      requestExists = true;
-    }
-  });
-
-  if (requestExists) {
-    res.status(400).json({ errors: [{ email: "request already sent" }] });
+  if (isSentRequestExists(myUserObj, theirUserObj)) {
+    res.status(400).json({ message: "request already sent" });
     return;
   }
 
-  //all checks done i guess, now adding new request to their request array
-  newRequest = {
-    name: myUserObj.name,
-    email: myUserObj.email,
-    id: myUserObj.id,
-  };
-  const newRequests = [...theirRequests, newRequest];
-  theirUserObj.requests = newRequests;
-  theirUserObj.save();
+  //all checks done i guess
 
-  res.status(200).json(newRequest);
+  // add my req from to my sent
+  myUserObj.requests.sent = [...myUserObj.requests.sent, theirUserObj.id];
+  // add my req from to their received
+  theirUserObj.requests.received = [
+    ...theirUserObj.requests.received,
+    myUserObj.id,
+  ];
+
+  //declare what stuff is modified
+  myUserObj.markModified("requests.sent");
+  theirUserObj.markModified("requests.received");
+
+  //save
+  await myUserObj.save();
+  await theirUserObj.save();
+
+  res.status(200).json({ success: true });
 };
