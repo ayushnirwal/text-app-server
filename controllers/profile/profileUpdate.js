@@ -1,4 +1,4 @@
-const User = require("../models/User");
+const User = require("../../models/User");
 
 exports.profileUpdate = async (req, res, next) => {
   try {
@@ -18,7 +18,7 @@ exports.profileUpdate = async (req, res, next) => {
     myUserObj.avatarInd = avatarInd;
     myUserObj.name = name;
 
-    myUserObj.save();
+    await myUserObj.save();
     return res.status(200).json({ success: "true" });
   } catch (error) {
     console.log(error);
